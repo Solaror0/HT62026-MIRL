@@ -17,7 +17,9 @@
 // IMPORTANT: This struct MUST exactly match the struct on your sender ESPs!
 typedef struct struct_message {
   int node_id;     // E.g., 1, 2, 3... to identify which ESP is sending
-  float transmission;  // Example sensor data
+  int picked_up;
+  int left_click;
+  int right_click;
 } struct_message;
 
 struct_message myData;
@@ -34,7 +36,9 @@ void OnDataRecv(uint8_t * mac, uint8_t *incomingData, uint8_t len) {
     if (i < 5) Serial.print(":");
   }
   Serial.print(" | Node ID: "); Serial.print(myData.node_id);
-  Serial.print(" | Sensor 1: "); Serial.print(myData.transmission);
+  Serial.print(" | Sensor 1: "); Serial.print(myData.picked_up);
+  Serial.println(" | Sensor 1: "); Serial.print(myData.left_click);
+  Serial.println();
 
 }
 
@@ -55,9 +59,9 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     Serial.printf("%02X", mac[i]);
     if (i < 5) Serial.print(":");
   }
-  Serial.print(" | Node ID: "); Serial.print(myData.node_id);
-  Serial.print(" | Sensor 1: "); Serial.print(myData.sensor_1);
-  Serial.print(" | Sensor 2: "); Serial.println(myData.sensor_2);
+  // Serial.print(" | Node ID: "); Serial.print(myData.node_id);
+  // Serial.print(" | Sensor 1: "); Serial.print(myData.sensor_1);
+  // Serial.print(" | Sensor 2: "); Serial.println(myData.sensor_2);
 }
 #endif
 
