@@ -21,7 +21,7 @@ typedef struct struct_message {
 } struct_message;
 
 struct_message myData;
-float timeOfUse;
+
 void setup() {
   Serial.begin(115200);
 
@@ -38,6 +38,10 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
 
+  //circuit closing setup
+
+  pinMode(14,INPUT_PULLUP);
+
   // ESP-NOW Initialization
   #if defined(ESP32)
     esp_now_init();
@@ -46,41 +50,15 @@ void setup() {
     esp_now_add_peer(&peerInfo);
   #endif
 
-  myData.node_id = 2;
-
-  timeOfUse = millis();
+  myData.node_id = 3;
   
 }
-float lastLoopDiff = 0.00;
- 
+
 void loop() {
   sensors_event_t a, g, temp;
-  float accYNow, accYPrev;
-  float accYStoreA, accYStoreB;
-  accYPrev = a.acceleration.y;
+
   mpu.getEvent(&a, &g, &temp);
-  accYNow = a.acceleration.y;
-  float cooldown;
-  cooldown = millis() - timeOfUse;
-  //myData.right_click = ((abs(accYNow) - abs(accYPrev)) > 1.0) ? not(myData.right_click) : myData.right_click;
   
-  if(not(myData.right_click)) {
-    if((accYNow-accYPrev)>1.0) {
-      
-
-      if(cooldown > 900) {myData.right_click = 1; timeOfUse = millis();}
-      
-      
-    }
-  } else {
-
-    if((accYNow-accYPrev)<(-1.0) ) {  //&& abs(abs(lastLoopDiff)-abs(accYNow-accYPrev))>2.5
-      
-      if(cooldown > 900) {myData.right_click = 0; timeOfUse = millis();}
-      
-     delay(400);}
-  }
-
   float accelMag = sqrt(pow(a.acceleration.x, 2) + pow(a.acceleration.y, 2));
     myData.picked_up = (accelMag > 2.0);
 // Neatly formatted serial output
@@ -93,15 +71,16 @@ void loop() {
   // Serial.print("\tGyroY: "); Serial.print(g.gyro.y);
   // Serial.print("\tGyroZ: "); Serial.println(g.gyro.z);
 
+
+  int closed_state = digitalRead(14);
+
+  myData.right_click = (closed_state == LOW) ? 1 : 0;
+
   Serial.print("R click: "); Serial.print(myData.right_click);
-   Serial.print("AccY Diff "); Serial.print((accYNow-accYPrev));
-   Serial.print(" AccY Diff Before "); Serial.print((lastLoopDiff));
-   Serial.print(" Time of Use "); Serial.print((timeOfUse));
-   Serial.print(" Cooldown "); Serial.print((cooldown));
-   Serial.print(" RC "); Serial.print((myData.right_click));
+
   Serial.print(" Pickup "); Serial.println(myData.picked_up); Serial.println();
 
   esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
-  lastLoopDiff = accYNow - accYPrev;
+
   delay(400); 
 }

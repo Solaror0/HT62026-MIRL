@@ -36,8 +36,9 @@ void OnDataRecv(uint8_t * mac, uint8_t *incomingData, uint8_t len) {
     if (i < 5) Serial.print(":");
   }
   Serial.print(" | Node ID: "); Serial.print(myData.node_id);
-  Serial.print(" | Sensor 1: "); Serial.print(myData.picked_up);
-  Serial.println(" | Sensor 1: "); Serial.print(myData.left_click);
+  Serial.print(" | Picked: "); Serial.print(myData.picked_up);
+  Serial.print(" | Left Click "); Serial.print(myData.left_click);
+    Serial.println(" | Right Click "); Serial.print(myData.right_click);
   Serial.println();
 
 }
