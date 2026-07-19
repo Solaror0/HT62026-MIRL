@@ -26,14 +26,14 @@ void setup() {
   Serial.begin(115200);
 
   // Initialize Wire with custom pins 25 (SDA) and 26 (SCL)
-  Wire.begin(25, 26); 
-  if (!mpu.begin(0x68)) { 
-    Serial.println("Failed to find MPU6050 at 0x68");
-    while (1);
-} else {
+//   Wire.begin(25, 26); 
+//   if (!mpu.begin(0x68)) { 
+//     Serial.println("Failed to find MPU6050 at 0x68");
+//     while (1);
+// } else {
 
-  Serial.println("Yo we good on the MPU side");
-}
+//   Serial.println("Yo we good on the MPU side");
+// }
   
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
@@ -55,12 +55,12 @@ void setup() {
 }
 
 void loop() {
-  sensors_event_t a, g, temp;
+  // sensors_event_t a, g, temp;
 
-  mpu.getEvent(&a, &g, &temp);
+  // mpu.getEvent(&a, &g, &temp);
   
-  float accelMag = sqrt(pow(a.acceleration.x, 2) + pow(a.acceleration.y, 2));
-    myData.picked_up = (accelMag > 2.0);
+  // float accelMag = sqrt(pow(a.acceleration.x, 2) + pow(a.acceleration.y, 2));
+  //   myData.picked_up = (accelMag > 4.0);
 // Neatly formatted serial output
   // Serial.print("AccX: "); Serial.print(a.acceleration.x);
   // Serial.print("\tAccY: "); Serial.print(accYNow);
@@ -78,7 +78,7 @@ void loop() {
 
   Serial.print("R click: "); Serial.print(myData.right_click);
 
-  Serial.print(" Pickup "); Serial.println(myData.picked_up); Serial.println();
+  // Serial.print(" Pickup "); Serial.println(myData.picked_up); Serial.println();
 
   esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
 

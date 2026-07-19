@@ -2,6 +2,7 @@
 #include <Arduino.h>
 
 void setup() {
+  
    Wire.begin(25, 26); 
   
   Serial.begin(115200);

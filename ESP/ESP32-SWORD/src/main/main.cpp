@@ -30,16 +30,19 @@ void OnDataRecv(uint8_t * mac, uint8_t *incomingData, uint8_t len) {
   memcpy(&myData, incomingData, sizeof(myData));
   
   // Format and upload data to PC via Serial
-  Serial.print("MAC: ");
-  for (int i = 0; i < 6; i++) {
-    Serial.printf("%02X", mac[i]);
-    if (i < 5) Serial.print(":");
-  }
-  Serial.print(" | Node ID: "); Serial.print(myData.node_id);
-  Serial.print(" | Picked: "); Serial.print(myData.picked_up);
-  Serial.print(" | Left Click "); Serial.print(myData.left_click);
-    Serial.println(" | Right Click "); Serial.print(myData.right_click);
-  Serial.println();
+  // Serial.print("MAC: ");
+  // for (int i = 0; i < 6; i++) {
+  //   Serial.printf("%02X", mac[i]);
+  //   if (i < 5) Serial.print(":");
+  // }
+
+  Serial.print(myData.node_id); Serial.print(",");  Serial.print(myData.picked_up);  Serial.print(","); 
+  Serial.print(myData.left_click); Serial.print(",");   Serial.print(myData.right_click);
+  // Serial.print(" | Node ID: "); Serial.print(myData.node_id);
+  // Serial.print(" | Picked: "); Serial.print(myData.picked_up);
+  // Serial.print(" | Left Click "); Serial.print(myData.left_click);
+  //   Serial.println(" | Right Click "); Serial.print(myData.right_click);
+   Serial.println();
 
 }
 
@@ -55,11 +58,11 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&myData, incomingData, sizeof(myData));
   
   // Format and upload data to PC via Serial
-  Serial.print("MAC: ");
-  for (int i = 0; i < 6; i++) {
-    Serial.printf("%02X", mac[i]);
-    if (i < 5) Serial.print(":");
-  }
+  // Serial.print("MAC: ");
+  // for (int i = 0; i < 6; i++) {
+  //   Serial.printf("%02X", mac[i]);
+  //   if (i < 5) Serial.print(":");
+  // }
   // Serial.print(" | Node ID: "); Serial.print(myData.node_id);
   // Serial.print(" | Sensor 1: "); Serial.print(myData.sensor_1);
   // Serial.print(" | Sensor 2: "); Serial.println(myData.sensor_2);
