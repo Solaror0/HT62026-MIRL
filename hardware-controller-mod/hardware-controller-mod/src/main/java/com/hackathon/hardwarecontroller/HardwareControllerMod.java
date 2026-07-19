@@ -3,6 +3,7 @@ package com.hackathon.hardwarecontroller;
 import com.hackathon.hardwarecontroller.action.ActionQueue;
 import com.hackathon.hardwarecontroller.controller.GameController;
 import com.hackathon.hardwarecontroller.controller.NodeHandlerRegistry;
+import com.hackathon.hardwarecontroller.controller.handlers.ArmorNodeHandler;
 import com.hackathon.hardwarecontroller.controller.handlers.BowNodeHandler;
 import com.hackathon.hardwarecontroller.controller.handlers.CvDetectionNodeHandler;
 import com.hackathon.hardwarecontroller.controller.handlers.JumpNodeHandler;
@@ -100,7 +101,7 @@ public class HardwareControllerMod implements ClientModInitializer {
         registry.register(NODE_ID_SHIELD, new ShieldNodeHandler());
         registry.register(NODE_ID_BOW, new BowNodeHandler());
 
-        registry.register(NODE_ID_CV_ARMOR, new CvDetectionNodeHandler("Armor"));
+        registry.register(NODE_ID_CV_ARMOR, new ArmorNodeHandler());
         registry.register(NODE_ID_CV_GOLDEN_APPLE, new CvDetectionNodeHandler("Golden apple"));
         registry.register(NODE_ID_LEAN, new LeanNodeHandler());
         registry.register(NODE_ID_RUN, new RunNodeHandler());

@@ -63,7 +63,9 @@ DEBUG WINDOW: with SHOW_DEBUG_WINDOW = True (the default), a preview
 window pops up showing the tracked shoulder/ear/nose/wrist points plus
 live threshold readouts, so you can see exactly what's triggering what
 while tuning. Press 'q' with that window focused to quit, or 'n' while
-looking at the screen to (re)calibrate the look-turn neutral point.
+looking at the screen to (re)calibrate the look-turn neutral point. A
+second window ("CV debug - armor mask") shows the raw blue-detection mask
+used by detect_armor() below.
 """
 
 import math
@@ -204,6 +206,32 @@ WRIST_OFFSCREEN_MARGIN = 0.0
 
 WRIST_HOLD_SECONDS = 0.4
 
+# --- Diamond-armor (blue blob) detection tuning -----------------------------
+#
+# This runs independently of the pose model -- it's a plain color/contour
+# check over the whole frame, not tied to any body landmark. Approach:
+# threshold the frame in HSV to a mask of "pixels that look like diamond
+# blue" (color alone is noisy -- reflections, other blue objects, etc. --
+# so thresholding alone isn't enough), find the largest contiguous blob in
+# that mask, and check whether it's big enough to plausibly be a
+# chestplate rather than noise.
+
+# HSV range for diamond's cyan-blue. OpenCV's H is 0-179 (not 0-359).
+# Diamond gear renders as a bright, fairly saturated cyan -- this range is
+# a reasonable starting point but WILL need tuning for your lighting/webcam.
+# Watch the "CV debug - armor mask" window while wearing the chestplate:
+# widen the range if real diamond pixels are getting excluded (showing
+# black in the mask), narrow it if background stuff is bleeding in
+# (showing white where there's no diamond).
+ARMOR_HSV_LOWER = (85, 80, 80)
+ARMOR_HSV_UPPER = (130, 255, 255)
+
+# Minimum contour area (in pixels, at whatever resolution your webcam
+# captures) before a blue blob counts as "yes, that's the chestplate" and
+# not just a stray blue pixel or something blue in the background. Scale
+# this up/down based on how big the chestplate appears in your frame --
+# the debug window shows the largest contour's area live.
+ARMOR_MIN_CONTOUR_AREA = 2000
 
 # --- MediaPipe Pose Landmarker setup -----------------------------------
 
@@ -270,10 +298,49 @@ _smoothed_yaw_ratio = 0.0 # EMA-filtered, this is what actually gets thresholded
 _currently_looking: str | None = None  # hysteresis state
 _yaw_neutral_offset = 0.0 # calibrated "straight ahead" point, set via _calibrate_look_neutral()
 
+_last_armor_mask = None         # exposed for the debug overlay
+_last_armor_contour = None      # exposed for the debug overlay
+_last_armor_contour_area = 0.0  # exposed for the debug overlay
+
 
 def detect_armor(frame) -> bool:
-    """TODO: replace with real detection (color threshold + contours is a reasonable start)."""
-    return False
+    """
+    Looks for a large blob of diamond-blue in the frame.
+
+    Approach: threshold the frame in HSV to a mask of "pixels that look
+    like diamond blue", then find the largest contiguous blob in that
+    mask and check whether it's big enough to plausibly be a chestplate
+    rather than noise. This combo (color mask -> contours -> area
+    threshold) is more robust than either alone.
+    """
+    global _last_armor_mask, _last_armor_contour, _last_armor_contour_area
+
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, ARMOR_HSV_LOWER, ARMOR_HSV_UPPER)
+
+    # Clean up small speckle noise in the mask before contour-finding --
+    # opening (erode then dilate) removes tiny isolated blobs, closing
+    # (dilate then erode) fills small holes inside the chestplate blob
+    # (e.g. from specular highlights on the diamond texture).
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+    _last_armor_mask = mask
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        _last_armor_contour = None
+        _last_armor_contour_area = 0.0
+        return False
+
+    largest_contour = max(contours, key=cv2.contourArea)
+    largest_area = cv2.contourArea(largest_contour)
+
+    _last_armor_contour = largest_contour
+    _last_armor_contour_area = largest_area
+
+    return largest_area >= ARMOR_MIN_CONTOUR_AREA
 
 
 def detect_golden_apple(frame) -> bool:
@@ -479,7 +546,7 @@ def detect_wrist_running(landmarks):
     return moving, sprinting
 
 
-def _draw_debug_overlay(frame, landmarks, look, moving, sprinting, jumped) -> bool:
+def _draw_debug_overlay(frame, landmarks, look, moving, sprinting, jumped, armor_detected) -> bool:
     """Draws tracked points + live threshold readouts. Returns True if the user pressed 'q' to quit."""
     height, width = frame.shape[:2]
 
@@ -506,6 +573,10 @@ def _draw_debug_overlay(frame, landmarks, look, moving, sprinting, jumped) -> bo
             color = wrist_colors[i] if landmark.visibility >= WRIST_VISIBILITY_THRESHOLD else (100, 100, 100)
             cv2.circle(frame, to_px(landmark), 6, color, -1)
 
+    if _last_armor_contour is not None:
+        outline_color = (0, 255, 255) if armor_detected else (0, 0, 255)  # yellow if it counts, red if too small
+        cv2.drawContours(frame, [_last_armor_contour], -1, outline_color, 2)
+
     crossings_per_second = len(_wrist_crossing_times) / RUN_CROSSING_WINDOW_SECONDS
     now = time.monotonic()
 
@@ -527,6 +598,7 @@ def _draw_debug_overlay(frame, landmarks, look, moving, sprinting, jumped) -> bo
         f"   Moving: {moving}   Sprinting: {sprinting}",
         f"Jump delta: {_last_jump_delta:+.3f}  baseline: {_movement_baseline:.3f}  "
         f"thresh: {max(_movement_baseline * JUMP_MOVEMENT_MULTIPLIER, JUMP_MIN_ABSOLUTE_DELTA):.3f}   Jump: {jumped}",
+        f"Armor blob area: {_last_armor_contour_area:.0f}  (thresh>{ARMOR_MIN_CONTOUR_AREA})   Armor: {armor_detected}",
     ]
     y = 20
     for line in lines:
@@ -534,6 +606,12 @@ def _draw_debug_overlay(frame, landmarks, look, moving, sprinting, jumped) -> bo
         y += 20
 
     cv2.imshow("CV debug", frame)
+    if _last_armor_mask is not None:
+        # Separate window for the raw blue mask -- makes it obvious
+        # whether ARMOR_HSV_LOWER/UPPER need widening or narrowing (see
+        # the tuning comment above those constants).
+        cv2.imshow("CV debug - armor mask", _last_armor_mask)
+
     key = cv2.waitKey(1) & 0xFF
     if key == ord('n'):
         _calibrate_look_neutral()
@@ -610,7 +688,7 @@ def main() -> None:
                 sock = connect()
 
             if SHOW_DEBUG_WINDOW:
-                quit_requested = _draw_debug_overlay(frame, landmarks, look, moving, sprinting, jumped)
+                quit_requested = _draw_debug_overlay(frame, landmarks, look, moving, sprinting, jumped, armor_detected)
                 if quit_requested:
                     break
 

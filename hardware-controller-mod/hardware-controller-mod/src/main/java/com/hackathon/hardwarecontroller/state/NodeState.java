@@ -1,5 +1,7 @@
 package com.hackathon.hardwarecontroller.state;
 
+import net.minecraft.item.ItemStack;
+
 /**
  * Tracks the latest known state for a single hardware node (one prop).
  *
@@ -34,6 +36,14 @@ public class NodeState {
      * +1 = leaning right. Read once per client tick to apply rotation.
      */
     private volatile int leanDirection = 0;
+
+    /**
+     * Generic scratch slot for handlers that need to remember an ItemStack
+     * across calls -- e.g. ArmorNodeHandler stashes whatever was equipped
+     * in the chest slot before an auto-equip here, so it can put it back
+     * when the CV script stops detecting the armor.
+     */
+    private volatile ItemStack savedItemStack = ItemStack.EMPTY;
 
     public boolean isHeldByHardware() {
         return heldByHardware;
@@ -89,6 +99,14 @@ public class NodeState {
 
     public void setLeanDirection(int leanDirection) {
         this.leanDirection = leanDirection;
+    }
+
+    public ItemStack getSavedItemStack() {
+        return savedItemStack;
+    }
+
+    public void setSavedItemStack(ItemStack savedItemStack) {
+        this.savedItemStack = savedItemStack;
     }
 
     /**
