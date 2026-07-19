@@ -1,0 +1,7 @@
+{
+  "category.hardwarecontroller.debug": "Hardware Controller (Debug)",
+  "key.hardwarecontroller.debug_toggle_sword": "Toggle Simulated Sword Held",
+  "key.hardwarecontroller.debug_attack": "Simulate Sword Swing",
+  "key.hardwarecontroller.debug_toggle_armor": "Toggle Simulated CV Armor Detected",
+  "key.hardwarecontroller.debug_toggle_golden_apple": "Toggle Simulated CV Golden Apple Detected"
+}
