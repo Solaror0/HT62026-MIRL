@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "hardwarecontroller",
+  "version": "${version}",
+  "name": "Hardware Controller",
+  "description": "Bridges ESP32 hardware props (sword, shield, bow, etc.) to Minecraft client actions over serial.",
+  "authors": ["Your Team"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/hardwarecontroller/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.hackathon.hardwarecontroller.HardwareControllerMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.9",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  }
+}
